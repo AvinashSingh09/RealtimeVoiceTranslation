@@ -22,12 +22,12 @@ export const useWebSocket = ({ url, onMessage, onOpen, onClose }: UseWebSocketPr
     useEffect(() => { onOpenRef.current = onOpen; }, [onOpen]);
     useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
-    const connect = useCallback(() => {
+    const connect = useCallback((overrideUrl?: string) => {
         if (ws.current && (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING)) {
             return;
         }
 
-        const socket = new WebSocket(urlRef.current);
+        const socket = new WebSocket(overrideUrl || urlRef.current);
         ws.current = socket;
 
         socket.onopen = () => {

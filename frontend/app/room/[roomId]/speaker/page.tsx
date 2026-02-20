@@ -40,7 +40,12 @@ export default function SpeakerPage({ params }: { params: Promise<{ roomId: stri
         if (!navigator.mediaDevices) return;
         try {
             setOriginalText(''); setError('');
-            ws.connect(); setIsStreaming(true);
+
+            // Allow Vercel environment variables to ovverride the localhost port
+            const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
+            ws.connect(`${wsUrl}?role=speaker&roomId=${roomId}&sourceLang=${sourceLang}`);
+
+            setIsStreaming(true);
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mr = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
             mediaRecorderRef.current = mr;

@@ -4,67 +4,57 @@ import com.google.api.gax.rpc.BidiStreamingCallable;
 import com.google.api.gax.rpc.ClientStream;
 import com.google.api.gax.rpc.ResponseObserver;
 import com.google.api.gax.rpc.StreamController;
-import com.google.cloud.speech.v1.RecognitionConfig;
-import com.google.cloud.speech.v1.SpeechClient;
-import com.google.cloud.speech.v1.StreamingRecognitionConfig;
-import com.google.cloud.speech.v1.StreamingRecognizeRequest;
-import com.google.cloud.speech.v1.StreamingRecognizeResponse;
+import com.google.cloud.speech.v2.AutoDetectDecodingConfig;
+import com.google.cloud.speech.v2.RecognitionConfig;
+import com.google.cloud.speech.v2.RecognizerName;
+import com.google.cloud.speech.v2.SpeechClient;
+import com.google.cloud.speech.v2.StreamingRecognitionConfig;
+import com.google.cloud.speech.v2.StreamingRecognizeRequest;
+import com.google.cloud.speech.v2.StreamingRecognizeResponse;
 import com.google.protobuf.ByteString;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class SpeechToTextService {
 
     private final SpeechClient speechClient;
+    private final String projectId = "gen-lang-client-0732328931";
 
     public SpeechToTextService(SpeechClient speechClient) {
         this.speechClient = speechClient;
-    }
-
-    public String transcribe(byte[] audioData, int sampleRate, String languageCode, String contentType)
-            throws java.io.IOException {
-        com.google.protobuf.ByteString audioBytes = com.google.protobuf.ByteString.copyFrom(audioData);
-        com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding encoding = mapEncoding(contentType);
-
-        com.google.cloud.speech.v1.RecognitionConfig.Builder cb = com.google.cloud.speech.v1.RecognitionConfig.newBuilder()
-                .setEncoding(encoding).setLanguageCode(languageCode);
-        if (encoding == com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding.MP3) cb.setSampleRateHertz(16000);
-
-        com.google.cloud.speech.v1.RecognitionAudio audio = com.google.cloud.speech.v1.RecognitionAudio.newBuilder()
-                .setContent(audioBytes).build();
-        com.google.cloud.speech.v1.RecognizeResponse resp = speechClient.recognize(cb.build(), audio);
-
-        StringBuilder sb = new StringBuilder();
-        resp.getResultsList().forEach(r -> {
-            if (r.getAlternativesCount() > 0) sb.append(r.getAlternativesList().get(0).getTranscript());
-        });
-        return sb.toString();
-    }
-
-    private com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding mapEncoding(String ct) {
-        if (ct == null) return com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED;
-        return switch (ct) {
-            case "audio/webm", "audio/ogg" -> com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding.WEBM_OPUS;
-            case "audio/mpeg", "audio/mp3" -> com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding.MP3;
-            case "audio/flac" -> com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding.FLAC;
-            case "audio/wav" -> com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding.LINEAR16;
-            default -> com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED;
-        };
     }
 
     public SpeechClient streamingRecognizeClient() {
         return speechClient;
     }
 
-    public RecognitionConfig getRecognitionConfig(String languageCode) {
-        String model = "latest_long"; // Default model for better accuracy across languages
+    public String transcribe(byte[] audioData, int sampleRateHertz, String languageCode, String contentType) {
+        try {
+            com.google.cloud.speech.v2.RecognizeRequest request = com.google.cloud.speech.v2.RecognizeRequest.newBuilder()
+                    .setConfig(com.google.cloud.speech.v2.RecognitionConfig.newBuilder()
+                            .setAutoDecodingConfig(com.google.cloud.speech.v2.AutoDetectDecodingConfig.newBuilder().build())
+                            .addLanguageCodes(languageCode)
+                            .setModel("chirp_3")
+                            .build())
+                    .setRecognizer(RecognizerName.of(projectId, "asia-south1", "_").toString())
+                    .setContent(ByteString.copyFrom(audioData))
+                    .build();
 
-        return RecognitionConfig.newBuilder()
-                .setEncoding(RecognitionConfig.AudioEncoding.WEBM_OPUS)
-                .setLanguageCode(languageCode)
-                .setSampleRateHertz(48000)
-                .setModel(model)
-                .build();
+            com.google.cloud.speech.v2.RecognizeResponse response = speechClient.recognize(request);
+            StringBuilder sb = new StringBuilder();
+            response.getResultsList().forEach(r -> {
+                if (r.getAlternativesCount() > 0) {
+                    sb.append(r.getAlternativesList().get(0).getTranscript());
+                }
+            });
+            return sb.toString();
+        } catch (Exception e) {
+            System.err.println("Transcription error: " + e.getMessage());
+            return "";
+        }
     }
 
     public interface StreamCallbacks {
@@ -88,27 +78,27 @@ public class SpeechToTextService {
 
     public void sendAudio(ClientStream<StreamingRecognizeRequest> stream, byte[] audioData) {
         StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder()
-                .setAudioContent(ByteString.copyFrom(audioData))
+                .setAudio(ByteString.copyFrom(audioData))
+                .setRecognizer(RecognizerName.of(projectId, "asia-south1", "_").toString())
                 .build();
         stream.send(request);
     }
 
     private StreamingRecognizeRequest buildConfigRequest(String languageCode) {
-        String model = "latest_long";
+        AutoDetectDecodingConfig decodingConfig = AutoDetectDecodingConfig.newBuilder().build();
 
         RecognitionConfig config = RecognitionConfig.newBuilder()
-                .setEncoding(RecognitionConfig.AudioEncoding.WEBM_OPUS)
-                .setLanguageCode(languageCode)
-                .setSampleRateHertz(48000)
-                .setModel(model)
+                .setAutoDecodingConfig(decodingConfig)
+                .addLanguageCodes(languageCode)
+                .setModel("chirp_3")
                 .build();
 
         StreamingRecognitionConfig streamingConfig = StreamingRecognitionConfig.newBuilder()
                 .setConfig(config)
-                .setInterimResults(false)
                 .build();
 
         return StreamingRecognizeRequest.newBuilder()
+                .setRecognizer(RecognizerName.of(projectId, "asia-south1", "_").toString())
                 .setStreamingConfig(streamingConfig)
                 .build();
     }

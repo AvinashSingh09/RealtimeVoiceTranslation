@@ -4,7 +4,7 @@ import com.example.voice_translation.service.SpeechToTextService;
 import com.example.voice_translation.service.TextToSpeechService;
 import com.example.voice_translation.service.TranslationService;
 import com.google.api.gax.rpc.ClientStream;
-import com.google.cloud.speech.v1.StreamingRecognizeRequest;
+import com.google.cloud.speech.v2.StreamingRecognizeRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
@@ -22,12 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CompletableFuture;
-import com.google.api.gax.rpc.StreamController;
-import com.google.api.gax.rpc.ResponseObserver;
-import com.google.cloud.speech.v1.StreamingRecognitionResult;
-import com.google.cloud.speech.v1.StreamingRecognitionConfig;
-import com.google.cloud.speech.v1.StreamingRecognizeResponse;
-import com.google.protobuf.ByteString;
+
 
 @Component
 public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
@@ -88,10 +83,7 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
             if (state.stream == null) {
                 initSttStream(session, state);
             }
-            StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder()
-                    .setAudioContent(ByteString.copyFrom(message.getPayload()))
-                    .build();
-            state.stream.send(request);
+            sttService.sendAudio(state.stream, message.getPayload().array());
         } catch (Exception e) {
             System.err.println("Error handling binary message: " + e.getMessage());
         }
@@ -120,47 +112,28 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
     }
 
     private void initSttStream(WebSocketSession session, SessionState state) {
-        System.out.println("Initializing STT stream for session " + session.getId());
-        ClientStream<StreamingRecognizeRequest> stream = sttService.streamingRecognizeClient()
-                .streamingRecognizeCallable()
-                .splitCall(new ResponseObserver<StreamingRecognizeResponse>() {
-                    @Override
-                    public void onStart(StreamController controller) {}
+        System.out.println("Initializing V2 STT stream for session " + session.getId());
 
-                    @Override
-                    public void onResponse(StreamingRecognizeResponse response) {
-                        for (StreamingRecognitionResult result : response.getResultsList()) {
-                            if (result.getIsFinal()) {
-                                String transcript = result.getAlternatives(0).getTranscript();
-                                processTranscriptForRoom(session, state, transcript);
-                            }
-                        }
-                    }
+        state.stream = sttService.startStreaming(state.sourceLang, new SpeechToTextService.StreamCallbacks() {
+            @Override
+            public void onTranscript(String transcript) {
+                processTranscriptForRoom(session, state, transcript);
+            }
 
-                    @Override
-                    public void onComplete() {
-                        System.out.println("STT stream complete for " + session.getId());
-                        state.sttDone.set(true);
-                        if (state.pending.get() == 0) sendText(session, "STREAM_COMPLETE");
-                    }
+            @Override
+            public void onComplete() {
+                System.out.println("STT stream complete for " + session.getId());
+                state.sttDone.set(true);
+                if (state.pending.get() == 0) sendText(session, "STREAM_COMPLETE");
+            }
 
-                    @Override
-                    public void onError(Throwable t) {
-                        System.err.println("STT error: " + t.getMessage());
-                        state.sttDone.set(true);
-                        if (state.pending.get() == 0) sendText(session, "STREAM_COMPLETE");
-                    }
-                });
-
-        state.stream = stream;
-        
-        // Send the config request first
-        StreamingRecognitionConfig recognitionConfig = StreamingRecognitionConfig.newBuilder()
-                .setConfig(sttService.getRecognitionConfig(state.sourceLang))
-                .setInterimResults(false)
-                .build();
-        stream.send(StreamingRecognizeRequest.newBuilder()
-                .setStreamingConfig(recognitionConfig).build());
+            @Override
+            public void onError(Throwable t) {
+                System.err.println("STT error: " + t.getMessage());
+                state.sttDone.set(true);
+                if (state.pending.get() == 0) sendText(session, "STREAM_COMPLETE");
+            }
+        });
     }
 
     private void processTranscriptForRoom(WebSocketSession speakerSession, SessionState speakerState, String transcript) {

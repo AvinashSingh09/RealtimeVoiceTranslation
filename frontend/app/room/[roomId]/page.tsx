@@ -68,7 +68,9 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
     if (!navigator.mediaDevices) return;
     try {
       resetState();
-      ws.connect();
+      // Allow Vercel environment variables to ovverride the localhost port
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
+      ws.connect(`${wsUrl}?role=creator&roomId=${params.roomId}`);
       setIsStreaming(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
