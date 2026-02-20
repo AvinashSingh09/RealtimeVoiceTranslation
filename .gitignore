@@ -1,0 +1,13 @@
+﻿node_modules/
+.next/
+target/
+.env
+.DS_Store
+.idea/
+*.iml
+.vscode/
+logs
+*.class
+*.log
+build_log.txt
+run_log.txt
