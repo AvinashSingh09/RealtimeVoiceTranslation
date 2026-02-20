@@ -19,6 +19,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CompletableFuture;
+import com.google.api.gax.rpc.StreamController;
+import com.google.api.gax.rpc.ResponseObserver;
+import com.google.cloud.speech.v1.StreamingRecognitionResult;
+import com.google.cloud.speech.v1.StreamingRecognitionConfig;
+import com.google.cloud.speech.v1.StreamingRecognizeResponse;
+import com.google.protobuf.ByteString;
 
 @Component
 public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
@@ -28,8 +37,9 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
     private final TextToSpeechService ttsService;
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
-    // Per-session state
+    // Per-session and Room state
     private final Map<String, SessionState> sessions = new ConcurrentHashMap<>();
+    private final Map<String, List<WebSocketSession>> rooms = new ConcurrentHashMap<>();
 
     public RealtimeTranslationHandler(SpeechToTextService stt, TranslationService tl, TextToSpeechService tts) {
         this.sttService = stt;
@@ -40,9 +50,12 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         String sid = session.getId();
-        System.out.println("WS Connected: " + sid);
-        String[] params = parseParams(session);
-        sessions.put(sid, new SessionState(params[0], params[1], params[2], params[3], params[4]));
+        SessionState state = parseParams(session);
+        sessions.put(sid, state);
+        
+        // Add session to room group
+        rooms.computeIfAbsent(state.roomId, k -> new CopyOnWriteArrayList<>()).add(session);
+        System.out.println("WS Connected: " + sid + " | Role: " + state.role + " | Room: " + state.roomId);
     }
 
     @Override
@@ -59,34 +72,46 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
                 }
             }
         } catch (Exception e) {
-            System.err.println("handleTextMessage error: " + e.getMessage());
+            System.err.println("Error handling text message: " + e.getMessage());
         }
     }
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
+        SessionState state = sessions.get(session.getId());
+        if (state == null || !"speaker".equals(state.role)) {
+            // Only 'speaker' roles should be sending audio up to the server.
+            return; 
+        }
+
         try {
-            String sid = session.getId();
-            SessionState state = sessions.get(sid);
-            if (state == null) return;
-
-            // Lazily initialize STT stream on first audio chunk
-            if (state.stream == null) initSttStream(session, state);
-
-            if (state.stream != null) {
-                sttService.sendAudio(state.stream, message.getPayload().array());
+            if (state.stream == null) {
+                initSttStream(session, state);
             }
+            StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder()
+                    .setAudioContent(ByteString.copyFrom(message.getPayload()))
+                    .build();
+            state.stream.send(request);
         } catch (Exception e) {
-            // Swallow errors to prevent Tomcat from closing the WebSocket
-            System.err.println("handleBinaryMessage error: " + e.getMessage());
+            System.err.println("Error handling binary message: " + e.getMessage());
         }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         String sid = session.getId();
-        System.out.println("WS Closed (" + status + "): " + sid);
-        sessions.remove(sid);
+        SessionState state = sessions.remove(sid);
+        if (state != null) {
+            List<WebSocketSession> roomSessions = rooms.get(state.roomId);
+            if (roomSessions != null) {
+                roomSessions.remove(session);
+                if (roomSessions.isEmpty()) rooms.remove(state.roomId);
+            }
+            if (state.stream != null) {
+                try { state.stream.closeSend(); } catch (Exception ignored) {}
+            }
+        }
+        System.out.println("WS Disconnected: " + sid);
     }
 
     @Override
@@ -95,25 +120,26 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
     }
 
     private void initSttStream(WebSocketSession session, SessionState state) {
-        String sid = session.getId();
-        System.out.println("Starting STT stream: " + sid);
-
-        ClientStream<StreamingRecognizeRequest> stream =
-                sttService.startStreaming(state.sourceLang, new SpeechToTextService.StreamCallbacks() {
+        System.out.println("Initializing STT stream for session " + session.getId());
+        ClientStream<StreamingRecognizeRequest> stream = sttService.streamingRecognizeClient()
+                .streamingRecognizeCallable()
+                .splitCall(new ResponseObserver<StreamingRecognizeResponse>() {
                     @Override
-                    public void onTranscript(String transcript) {
-                        state.pending.incrementAndGet();
-                        executor.submit(() -> {
-                            processTranscript(session, state, transcript);
-                            if (state.pending.decrementAndGet() == 0 && state.sttDone.get()) {
-                                sendText(session, "STREAM_COMPLETE");
+                    public void onStart(StreamController controller) {}
+
+                    @Override
+                    public void onResponse(StreamingRecognizeResponse response) {
+                        for (StreamingRecognitionResult result : response.getResultsList()) {
+                            if (result.getIsFinal()) {
+                                String transcript = result.getAlternatives(0).getTranscript();
+                                processTranscriptForRoom(session, state, transcript);
                             }
-                        });
+                        }
                     }
 
                     @Override
                     public void onComplete() {
-                        System.out.println("STT complete: " + sid);
+                        System.out.println("STT stream complete for " + session.getId());
                         state.sttDone.set(true);
                         if (state.pending.get() == 0) sendText(session, "STREAM_COMPLETE");
                     }
@@ -127,21 +153,54 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
                 });
 
         state.stream = stream;
+        
+        // Send the config request first
+        StreamingRecognitionConfig recognitionConfig = StreamingRecognitionConfig.newBuilder()
+                .setConfig(sttService.getRecognitionConfig(state.sourceLang))
+                .setInterimResults(false)
+                .build();
+        stream.send(StreamingRecognizeRequest.newBuilder()
+                .setStreamingConfig(recognitionConfig).build());
     }
 
-    private void processTranscript(WebSocketSession session, SessionState state, String transcript) {
+    private void processTranscriptForRoom(WebSocketSession speakerSession, SessionState speakerState, String transcript) {
         try {
-            System.out.println("Transcript: " + transcript);
-            sendText(session, "TRANSCRIPT:" + transcript);
+            System.out.println("Room " + speakerState.roomId + " Transcript: " + transcript);
+            // 1. Send Transcript back to speaker
+            sendText(speakerSession, "TRANSCRIPT:" + transcript);
 
-            String translated = translationService.translateText(transcript, state.targetLang);
-            System.out.println("Translated: " + translated);
-            sendText(session, "TRANSLATION:" + translated);
+            // 2. Broadcast to all Listeners in the room
+            List<WebSocketSession> roomSessions = rooms.get(speakerState.roomId);
+            if (roomSessions == null) return;
 
-            byte[] audio = ttsService.convertTextToSpeech(translated, state.targetLang, state.voiceModel, state.voiceGender, state.prompt);
-            sendBinary(session, audio);
+            for (WebSocketSession listenerSession : roomSessions) {
+                SessionState listenerState = sessions.get(listenerSession.getId());
+                if (listenerState == null || !"listener".equals(listenerState.role)) continue;
+                
+                speakerState.pending.incrementAndGet();
+                
+                // Do the translation and TTS asynchronously so one slow listener doesn't block the loop
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        String translated = translationService.translateText(transcript, listenerState.targetLang);
+                        sendText(listenerSession, "TRANSLATION:" + translated);
+
+                        byte[] audio = ttsService.convertTextToSpeech(
+                                translated, listenerState.targetLang, 
+                                listenerState.voiceModel, listenerState.voiceGender, listenerState.prompt);
+                        
+                        sendBinary(listenerSession, audio);
+                    } catch (Exception e) {
+                        System.err.println("Listener processing error: " + e.getMessage());
+                    } finally {
+                        if (speakerState.pending.decrementAndGet() == 0 && speakerState.sttDone.get()) {
+                            sendText(speakerSession, "STREAM_COMPLETE");
+                        }
+                    }
+                });
+            }
         } catch (Exception e) {
-            System.err.println("Processing error: " + e.getMessage());
+            System.err.println("Room Broadcasting error: " + e.getMessage());
         }
     }
 
@@ -157,24 +216,32 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
         } catch (IOException e) { System.err.println("Send error: " + e.getMessage()); }
     }
 
-    private String[] parseParams(WebSocketSession session) {
-        String src = "en-US", tgt = "es-ES", voice = "Standard", gender = "NEUTRAL", prompt = "";
+    private SessionState parseParams(WebSocketSession session) {
+        String role = "speaker", roomId = "default";
+        String src = "en-US", tgt = "en-US", voice = "Standard", gender = "NEUTRAL", prompt = "";
+        
         String query = session.getUri().getQuery();
-        if (query != null) for (String p : query.split("&")) {
-            String[] kv = p.split("=");
-            if (kv.length == 2) {
-                if ("source".equals(kv[0])) src = kv[1];
-                if ("target".equals(kv[0])) tgt = kv[1];
-                if ("voice".equals(kv[0])) voice = kv[1];
-                if ("gender".equals(kv[0])) gender = kv[1];
-                if ("prompt".equals(kv[0])) prompt = kv[1];
+        if (query != null) {
+            for (String p : query.split("&")) {
+                String[] kv = p.split("=");
+                if (kv.length == 2) {
+                    if ("roomId".equals(kv[0])) roomId = kv[1];
+                    if ("role".equals(kv[0])) role = kv[1];
+                    if ("source".equals(kv[0])) src = kv[1];
+                    if ("target".equals(kv[0])) tgt = kv[1];
+                    if ("voice".equals(kv[0])) voice = kv[1];
+                    if ("gender".equals(kv[0])) gender = kv[1];
+                    if ("prompt".equals(kv[0])) prompt = kv[1];
+                }
             }
         }
-        return new String[]{src, tgt, voice, gender, prompt};
+        return new SessionState(roomId, role, src, tgt, voice, gender, prompt);
     }
 
-    /** Encapsulates all per-session state to avoid NPE from concurrent map access */
+    /** Encapsulates all per-session state */
     private static class SessionState {
+        final String roomId;
+        final String role;
         final String sourceLang;
         final String targetLang;
         final String voiceModel;
@@ -184,7 +251,9 @@ public class RealtimeTranslationHandler extends AbstractWebSocketHandler {
         final AtomicBoolean sttDone = new AtomicBoolean(false);
         volatile ClientStream<StreamingRecognizeRequest> stream;
 
-        SessionState(String sourceLang, String targetLang, String voiceModel, String voiceGender, String prompt) {
+        SessionState(String roomId, String role, String sourceLang, String targetLang, String voiceModel, String voiceGender, String prompt) {
+            this.roomId = roomId;
+            this.role = role;
             this.sourceLang = sourceLang;
             this.targetLang = targetLang;
             this.voiceModel = voiceModel;

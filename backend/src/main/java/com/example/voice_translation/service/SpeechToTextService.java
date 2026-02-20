@@ -52,6 +52,18 @@ public class SpeechToTextService {
         };
     }
 
+    public SpeechClient streamingRecognizeClient() {
+        return speechClient;
+    }
+
+    public RecognitionConfig getRecognitionConfig(String languageCode) {
+        return RecognitionConfig.newBuilder()
+                .setEncoding(RecognitionConfig.AudioEncoding.WEBM_OPUS)
+                .setLanguageCode(languageCode)
+                .setSampleRateHertz(48000)
+                .build();
+    }
+
     public interface StreamCallbacks {
         void onTranscript(String transcript);
         void onComplete();
