@@ -40,24 +40,18 @@ export default function SpeakerPage({ params }: { params: Promise<{ roomId: stri
         if (!navigator.mediaDevices) return;
         try {
             setOriginalText(''); setError('');
-            ws.connect();
-            setIsStreaming(true);
+            ws.connect(); setIsStreaming(true);
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mr = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
             mediaRecorderRef.current = mr;
             mr.ondataavailable = (e) => { if (e.data.size > 0) ws.sendMessage(e.data); };
             mr.start(250);
-        } catch {
-            setError('Microphone access denied');
-        }
+        } catch { setError('Microphone access denied'); }
     };
 
     const stopMic = () => {
         const mr = mediaRecorderRef.current;
-        if (mr && mr.state === 'recording') {
-            mr.stop();
-            mr.stream.getTracks().forEach(t => t.stop());
-        }
+        if (mr && mr.state === 'recording') { mr.stop(); mr.stream.getTracks().forEach(t => t.stop()); }
         ws.sendMessage('END_OF_AUDIO');
     };
 
@@ -67,9 +61,7 @@ export default function SpeakerPage({ params }: { params: Promise<{ roomId: stri
         const audioEl = fileAudioRef.current;
         // @ts-ignore
         if (!audioEl.captureStream) return setError("Browser doesn't support captureStream.");
-
-        ws.connect();
-        setIsStreaming(true);
+        ws.connect(); setIsStreaming(true);
         audioEl.onplaying = () => {
             // @ts-ignore
             const stream = audioEl.captureStream() as MediaStream;
@@ -83,45 +75,116 @@ export default function SpeakerPage({ params }: { params: Promise<{ roomId: stri
         setTimeout(() => audioEl.play(), 500);
     };
 
+    // Sound wave bars component
+    const SoundWave = () => (
+        <div className="flex items-end gap-1 h-8">
+            {[0, 1, 2, 3, 4].map(i => (
+                <div key={i}
+                    className="w-1 bg-yellow-400 rounded-full animate-soundwave"
+                    style={{ height: '100%', animationDelay: `${i * 0.15}s`, animationDuration: `${0.8 + i * 0.1}s` }}
+                />
+            ))}
+        </div>
+    );
+
     return (
-        <main className="flex min-h-screen flex-col items-center p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 space-y-8 mt-12">
-                <h1 className="text-3xl font-extrabold text-blue-600">🎙️ Speaker Console ({roomId})</h1>
+        <div className="min-h-screen flex flex-col">
+            {/* Status Bar */}
+            <div className={`h-1 transition-all duration-500 ${isStreaming ? 'accent-border-gold' : 'bg-zinc-800'}`} />
 
-                <div className="w-1/2">
-                    <LanguageSelector label="I am speaking in:" value={sourceLang} onChange={setSourceLang} />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-700/50">
-                        <h3 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Option 1: Live Mic</h3>
-                        <button onClick={isStreaming ? stopMic : startMic}
-                            className={`px-8 py-3 rounded-full font-bold text-white transition-all shadow-md ${isStreaming ? 'bg-red-500 animate-pulse' : 'bg-blue-500 hover:bg-blue-600'}`}
-                        >
-                            {isStreaming ? '🛑 Stop Broadcasting' : '🎙️ Start Broadcasting'}
-                        </button>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                        <h3 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Option 2: Upload File</h3>
-                        <input type="file" accept="audio/*" onChange={(e) => { if (e.target.files?.[0]) setSourceAudio(e.target.files[0]); }}
-                            className="block w-full text-sm text-gray-500 ml-12 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 cursor-pointer" />
-                        {sourceAudio && (
-                            <div className="mt-4 flex flex-col items-center">
-                                <audio ref={fileAudioRef} controls className="w-full mb-2 h-8" />
-                                <button onClick={playAndStreamFile} disabled={isStreaming} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">{isStreaming ? 'Broadcasting...' : 'Play & Broadcast'}</button>
+            <main className="flex-1 flex flex-col items-center px-6 py-10">
+                <div className="w-full max-w-5xl space-y-8">
+                    {/* Top Bar */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
                             </div>
-                        )}
+                            <div>
+                                <h1 className="text-xl font-bold text-zinc-100">Broadcast Deck</h1>
+                                <p className="text-xs text-zinc-500 font-mono">Room: {roomId}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            {isStreaming && <SoundWave />}
+                            <div className="w-48"><LanguageSelector label="" value={sourceLang} onChange={setSourceLang} /></div>
+                        </div>
                     </div>
-                </div>
 
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg h-48 overflow-y-auto">
-                    <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2">Live Transcript</h3>
-                    <p className="text-lg">{originalText}</p>
-                </div>
+                    {/* Main Area */}
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Mic Section */}
+                        <div className="flex-1 surface-card p-10 flex flex-col items-center justify-center min-h-[420px] relative overflow-hidden">
+                            {/* Background glow */}
+                            {isStreaming && <div className="absolute inset-0 bg-yellow-500/5 animate-glow pointer-events-none" />}
 
-                {error && <div className="p-4 bg-red-100 text-red-700 rounded-md">{error}</div>}
-            </div>
-        </main>
+                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] mb-10">
+                                {isStreaming ? 'BROADCASTING  LIVE' : 'READY TO BROADCAST'}
+                            </p>
+
+                            <div className="relative">
+                                {/* Outer ring animation */}
+                                {isStreaming && (
+                                    <div className="absolute -inset-4 rounded-full border-2 border-yellow-400/30 animate-pulse-slow" />
+                                )}
+                                <button onClick={isStreaming ? stopMic : startMic}
+                                    className={`relative w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2 transition-all duration-300 shadow-2xl border-2 ${isStreaming
+                                        ? 'bg-red-500 border-red-400 shadow-red-500/30 hover:bg-red-600 scale-105'
+                                        : 'bg-gradient-to-br from-yellow-500 to-amber-600 border-yellow-400/50 shadow-yellow-500/20 hover:shadow-yellow-500/40 hover:scale-105 active:scale-95'
+                                        }`}>
+                                    <svg className={`w-14 h-14 text-white ${isStreaming ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        {isStreaming ? (
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
+                                        ) : (
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                        )}
+                                    </svg>
+                                    <span className="text-white text-xs font-bold tracking-widest uppercase">{isStreaming ? 'STOP' : 'START'}</span>
+                                </button>
+                            </div>
+
+                            {/* File Upload */}
+                            <div className="mt-10 w-full max-w-xs space-y-3">
+                                <label className="cursor-pointer text-sm font-medium text-zinc-400 bg-zinc-800/60 border border-zinc-700/40 border-dashed py-3 px-4 rounded-xl hover:border-zinc-600 hover:text-zinc-300 transition-colors flex justify-center items-center gap-2 truncate">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                                    {sourceAudio ? sourceAudio.name : "Upload audio file"}
+                                    <input type="file" accept="audio/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) setSourceAudio(e.target.files[0]); }} />
+                                </label>
+                                {sourceAudio && (
+                                    <div className="space-y-2 animate-in fade-in duration-200">
+                                        <audio ref={fileAudioRef} controls className="w-full h-9 rounded-lg opacity-70" />
+                                        <button onClick={playAndStreamFile} disabled={isStreaming}
+                                            className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-sm font-bold border border-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                                            {isStreaming ? 'Broadcasting...' : '▶ Play & Broadcast'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Transcript */}
+                        <div className="w-full lg:w-[400px] surface-card p-6 flex flex-col h-[520px]">
+                            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-zinc-800/60">
+                                <div className={`status-dot ${isStreaming ? 'status-dot-live' : 'status-dot-idle'}`} />
+                                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Live Transcript</h3>
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                <p className={`text-base leading-relaxed text-zinc-300 font-medium ${isStreaming && originalText ? 'blink-cursor' : ''}`}>
+                                    {originalText || <span className="text-zinc-600 italic">Waiting for audio input...</span>}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="p-4 bg-red-400/10 border border-red-400/20 text-red-400 text-sm font-medium rounded-xl flex items-center gap-3">
+                            <span>⚠</span><span>{error}</span>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
     );
 }

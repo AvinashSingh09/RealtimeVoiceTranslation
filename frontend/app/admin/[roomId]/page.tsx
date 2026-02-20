@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { VoiceModelSelector } from '../../../components/VoiceModelSelector';
 import { VoiceGenderSelector } from '../../../components/VoiceGenderSelector';
-import { LanguageSelector } from '../../../components/LanguageSelector';
 
 export default function AdminDashboard({ params }: { params: Promise<{ roomId: string }> }) {
     const resolvedParams = React.use(params);
@@ -11,41 +10,31 @@ export default function AdminDashboard({ params }: { params: Promise<{ roomId: s
 
     const [voiceModel, setVoiceModel] = useState('Standard');
     const [voiceGender, setVoiceGender] = useState('NEUTRAL');
-
     const handleModelChange = (model: string) => {
         setVoiceModel(model);
-        // Auto-switch gender/speaker when toggling between Gemini and Standard
-        if (model.startsWith('gemini') && !voiceGender.match(/^[A-Z][a-z]/)) {
-            setVoiceGender('Kore'); // Default Gemini speaker
-        } else if (!model.startsWith('gemini') && voiceGender.match(/^[A-Z][a-z]/)) {
-            setVoiceGender('NEUTRAL'); // Default standard gender
-        }
+        if (model.startsWith('gemini') && !voiceGender.match(/^[A-Z][a-z]/)) setVoiceGender('Kore');
+        else if (!model.startsWith('gemini') && voiceGender.match(/^[A-Z][a-z]/)) setVoiceGender('NEUTRAL');
     };
     const [voicePrompt, setVoicePrompt] = useState('');
     const [isSaved, setIsSaved] = useState(false);
     const [error, setError] = useState('');
+    const [copied, setCopied] = useState<string | null>(null);
 
     const saveRoomConfig = async () => {
         try {
             const hostname = window.location.hostname;
             const res = await fetch(`http://${hostname}:8080/api/rooms`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roomId, voiceModel, voiceGender, voicePrompt })
             });
             if (!res.ok) throw new Error('Failed to save room config');
-            setIsSaved(true);
-            setTimeout(() => setIsSaved(false), 3000);
-            setError('');
-        } catch (err: any) {
-            setError(err.message);
-        }
+            setIsSaved(true); setTimeout(() => setIsSaved(false), 3000); setError('');
+        } catch (err: any) { setError(err.message); }
     };
 
     const getLink = (role: 'speaker' | 'listener') => {
         if (typeof window === 'undefined') return '';
-        const base = `${window.location.protocol}//${window.location.host}`;
-        return `${base}/room/${roomId}/${role}`;
+        return `${window.location.protocol}//${window.location.host}/room/${roomId}/${role}`;
     };
 
     const copyLink = (role: 'speaker' | 'listener') => {
@@ -53,59 +42,80 @@ export default function AdminDashboard({ params }: { params: Promise<{ roomId: s
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(link);
         } else {
-            // Fallback for non-HTTPS / HTTP IP access
-            const textArea = document.createElement("textarea");
-            textArea.value = link;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-999999px";
-            textArea.style.top = "-999999px";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-            }
-            document.body.removeChild(textArea);
+            const ta = document.createElement("textarea"); ta.value = link;
+            ta.style.cssText = "position:fixed;left:-9999px;top:-9999px";
+            document.body.appendChild(ta); ta.focus(); ta.select();
+            try { document.execCommand('copy'); } catch { }
+            document.body.removeChild(ta);
         }
+        setCopied(role); setTimeout(() => setCopied(null), 2000);
     };
 
     return (
-        <main className="flex min-h-screen flex-col items-center p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 space-y-8 mt-12">
-                <h1 className="text-3xl font-extrabold text-blue-600">🛡️ Admin Dashboard</h1>
-                <p className="text-gray-500">Configure room <strong>{roomId}</strong> settings for all listeners.</p>
+        <div className="min-h-screen flex flex-col">
+            {/* Top accent line */}
+            <div className="h-1 accent-border-gold" />
 
-                <div className="space-y-4 bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <VoiceModelSelector value={voiceModel} onChange={handleModelChange} />
-                    <VoiceGenderSelector value={voiceGender} onChange={setVoiceGender} voiceModel={voiceModel} />
-                    {voiceModel.startsWith('gemini') && (
-                        <div className="flex flex-col">
-                            <label className="mb-2 font-bold text-gray-700 dark:text-gray-300">Global Voice Prompt</label>
-                            <input type="text" value={voicePrompt} onChange={(e) => setVoicePrompt(e.target.value)}
-                                placeholder="e.g. Speak highly dramatically" className="p-3 border rounded-md text-black" />
+            <main className="flex-1 flex flex-col items-center px-6 py-12">
+                <div className="w-full max-w-2xl space-y-8">
+                    {/* Header */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-zinc-100">Room Configuration</h1>
+                                <p className="text-sm text-zinc-500">Room <code className="px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded font-mono text-xs border border-yellow-500/20">{roomId}</code></p>
+                            </div>
                         </div>
-                    )}
-                    <button onClick={saveRoomConfig} className="w-full py-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
-                        {isSaved ? '✅ Saved!' : 'Save Room Settings'}
-                    </button>
-                    {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                </div>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                        <h3 className="font-bold text-purple-700 dark:text-purple-300 mb-2">🎤 Speaker Link</h3>
-                        <p className="text-xs text-gray-500 truncate mb-3">{getLink('speaker')}</p>
-                        <button onClick={() => copyLink('speaker')} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm w-full">Copy Speaker Link</button>
+                    {/* Config Card */}
+                    <div className="surface-card p-8 space-y-6">
+                        <VoiceModelSelector value={voiceModel} onChange={handleModelChange} />
+                        <VoiceGenderSelector value={voiceGender} onChange={setVoiceGender} voiceModel={voiceModel} />
+                        {voiceModel.startsWith('gemini') && (
+                            <div className="flex flex-col gap-2 animate-in fade-in duration-200">
+                                <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Expressiveness Prompt</label>
+                                <input type="text" value={voicePrompt} onChange={(e) => setVoicePrompt(e.target.value)}
+                                    placeholder="e.g. Speak dramatically and excitedly" className="input-dark focus:ring-yellow-500/50" />
+                            </div>
+                        )}
+                        <button onClick={saveRoomConfig}
+                            className={`w-full py-4 mt-4 font-bold rounded-xl transition-all duration-300 active:scale-[0.97] flex justify-center items-center gap-2 text-base ${isSaved
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black shadow-lg shadow-yellow-500/20'
+                                }`}>
+                            {isSaved ? '✓ Saved' : 'Save Configuration'}
+                        </button>
+                        {error && <p className="text-sm text-red-400 bg-red-400/10 px-4 py-3 rounded-xl border border-red-400/20 text-center">{error}</p>}
                     </div>
-                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <h3 className="font-bold text-green-700 dark:text-green-300 mb-2">🎧 Listener Link</h3>
-                        <p className="text-xs text-gray-500 truncate mb-3">{getLink('listener')}</p>
-                        <button onClick={() => copyLink('listener')} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm w-full">Copy Listener Link</button>
+
+                    {/* Share Links */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(['speaker', 'listener'] as const).map(role => (
+                            <div key={role} className="surface-card p-5 space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg">{role === 'speaker' ? '🎙️' : '🎧'}</span>
+                                    <h3 className="font-bold text-zinc-100 capitalize">{role} Link</h3>
+                                </div>
+                                <p className="text-xs text-zinc-500 font-mono truncate bg-zinc-800/50 px-3 py-2.5 rounded-lg border border-zinc-700/30">{getLink(role)}</p>
+                                <button onClick={() => copyLink(role)}
+                                    className={`w-full py-3 rounded-xl text-sm font-bold transition-all duration-200 active:scale-[0.97] ${copied === role
+                                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
+                                        }`}>
+                                    {copied === role ? '✓ Copied!' : 'Copy Link'}
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
     );
 }

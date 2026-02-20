@@ -17,15 +17,15 @@ const languages = [
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ label, value, onChange }) => {
   return (
-    <div className="flex flex-col">
-      <label className="mb-2 font-bold text-gray-700">{label}</label>
+    <div className="flex flex-col gap-2">
+      {label && <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">{label}</label>}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="p-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+        className="select-dark focus:ring-blue-500/50"
       >
         {languages.map((lang) => (
-          <option key={lang.code} value={lang.code}>
+          <option key={lang.code} value={lang.code} className="bg-zinc-900 text-zinc-100">
             {lang.name}
           </option>
         ))}

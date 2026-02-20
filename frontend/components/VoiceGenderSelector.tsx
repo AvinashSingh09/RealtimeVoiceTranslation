@@ -19,17 +19,21 @@ export const VoiceGenderSelector: React.FC<VoiceGenderSelectorProps> = ({ value,
     const isGemini = voiceModel?.startsWith('gemini');
 
     return (
-        <div className="flex flex-col">
-            <label className="mb-2 font-bold text-gray-700">{isGemini ? 'Speaker (Gemini)' : 'Voice Gender'}</label>
+        <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+                {isGemini ? 'Speaker (Gemini)' : 'Voice Gender'}
+            </label>
             <select value={value} onChange={(e) => onChange(e.target.value)}
-                className="p-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-black">
+                className="select-dark focus:ring-amber-500/50">
                 {isGemini ? (
-                    geminiSpeakers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)
+                    geminiSpeakers.map(s => (
+                        <option key={s.id} value={s.id} className="bg-zinc-900 text-zinc-100">{s.name}</option>
+                    ))
                 ) : (
                     <>
-                        <option value="NEUTRAL">Neutral</option>
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
+                        <option value="NEUTRAL" className="bg-zinc-900 text-zinc-100">Neutral</option>
+                        <option value="MALE" className="bg-zinc-900 text-zinc-100">Male</option>
+                        <option value="FEMALE" className="bg-zinc-900 text-zinc-100">Female</option>
                     </>
                 )}
             </select>

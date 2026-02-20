@@ -1,26 +1,177 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0f;
+  --foreground: #fafafa;
+  --surface-1: #18181b;
+  /* zinc-900 */
+  --surface-2: #27272a;
+  /* zinc-800 */
+  --border: #3f3f46;
+  /* zinc-700 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), 'Inter', system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), 'JetBrains Mono', monospace;
+
+  --animate-shimmer: shimmer 3s linear infinite;
+  --animate-pulse-slow: pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow-pulse 2s ease-in-out infinite;
+  --animate-soundwave: soundwave 1.2s ease-in-out infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* --- Keyframes --- */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
   }
 }
 
+@keyframes pulse-slow {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: .7;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes soundwave {
+
+  0%,
+  100% {
+    transform: scaleY(0.4);
+  }
+
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+/* --- Base --- */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Surface System (layered depth) --- */
+.surface-base {
+  @apply bg-zinc-950 border border-zinc-800/60;
+}
+
+.surface-card {
+  @apply bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50 rounded-2xl;
+}
+
+.surface-elevated {
+  @apply bg-zinc-800/40 backdrop-blur-md border border-zinc-700/40 rounded-xl;
+}
+
+/* --- Input System --- */
+.input-dark {
+  @apply bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-zinc-100 placeholder-zinc-500 font-medium focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-all duration-200;
+}
+
+.select-dark {
+  @apply bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-zinc-100 font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-all duration-200 bg-[url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='12'%20height='12'%20fill='%2371717a'%20viewBox='0%200%2016%2016'%3E%3Cpath%20d='M7.247%2011.14L2.451%205.658C1.885%205.013%202.345%204%203.204%204h9.592a1%201%200%20.753%201.659l-4.796%205.48a1%201%200%20-1.506%200z'/%3E%3C/svg%3E")] bg-[length:12px] bg-[right_16px_center] bg-no-repeat;
+}
+
+/* --- Accent Border (gold shimmer) --- */
+.accent-border-gold {
+  background: linear-gradient(90deg, #D4A017, #F0C644, #D4A017);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+/* --- Status Dot --- */
+.status-dot {
+  @apply w-2.5 h-2.5 rounded-full;
+}
+
+.status-dot-live {
+  @apply animate-pulse;
+  background: #D4A017;
+  box-shadow: 0 0 8px rgba(212, 160, 23, 0.6);
+}
+
+.status-dot-idle {
+  @apply bg-zinc-600;
+}
+
+/* --- Scrollbar --- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* --- Cursor blink for transcript --- */
+.blink-cursor::after {
+  content: "▌";
+  animation: blink 1s step-end infinite;
+  color: #D4A017;
+  @apply ml-1;
 }

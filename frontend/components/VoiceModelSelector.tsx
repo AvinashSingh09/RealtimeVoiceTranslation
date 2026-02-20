@@ -15,12 +15,14 @@ interface VoiceModelSelectorProps {
 }
 
 export const VoiceModelSelector: React.FC<VoiceModelSelectorProps> = ({ value, onChange }) => (
-    <div className="flex flex-col">
-        <label className="mb-2 font-bold text-gray-700">Voice Model</label>
+    <div className="flex flex-col gap-2">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Voice Model</label>
         <select value={value} onChange={(e) => onChange(e.target.value)}
-            className="p-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-black">
+            className="select-dark focus:ring-amber-500/50">
             {voiceModels.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.id} className="bg-zinc-900 text-zinc-100">
+                    {m.name}
+                </option>
             ))}
         </select>
     </div>

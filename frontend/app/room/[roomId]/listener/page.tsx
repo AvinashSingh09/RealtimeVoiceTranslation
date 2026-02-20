@@ -53,31 +53,98 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
         setIsConnected(true);
     };
 
-    if (!config) return <div className="p-8 text-center text-gray-500">Loading room configuration...</div>;
+    // Loading state
+    if (!config) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+            <div className="flex items-center gap-3 text-zinc-500">
+                <svg className="animate-spin h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span className="font-medium text-sm">Loading room configuration...</span>
+            </div>
+        </div>
+    );
 
     return (
-        <main className="flex min-h-screen flex-col items-center p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 space-y-8 mt-12">
-                <h1 className="text-3xl font-extrabold text-green-600">🎧 Listener View ({roomId})</h1>
+        <div className="min-h-screen flex flex-col">
+            {/* Status Bar */}
+            <div className={`h-1 transition-all duration-500 ${isConnected ? 'accent-border-gold' : 'bg-zinc-800'}`} />
 
-                <div className="flex gap-4 items-end border-b pb-6 border-gray-200 dark:border-gray-700">
-                    <div className="w-1/2">
-                        <LanguageSelector label="Translate to:" value={targetLang} onChange={setTargetLang} />
+            <main className="flex-1 flex flex-col items-center px-6 py-10">
+                <div className="w-full max-w-4xl space-y-8">
+                    {/* Top Bar */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold text-zinc-100">Listener Station</h1>
+                                <p className="text-xs text-zinc-500 font-mono">Room: {roomId}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-48"><LanguageSelector label="" value={targetLang} onChange={setTargetLang} /></div>
+                        </div>
                     </div>
-                    <button onClick={joinBroadcast} disabled={isConnected}
-                        className={`px-8 py-3 rounded-lg font-bold text-white transition-all shadow-md ${isConnected ? 'bg-green-600 opacity-50 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'}`}
-                    >
-                        {isConnected ? 'Connected ✅' : 'Connect to Broadcast'}
-                    </button>
-                </div>
 
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg h-64 overflow-y-auto border border-purple-100 dark:border-purple-800">
-                    <h3 className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2">Live Translation</h3>
-                    <p className="text-xl leading-relaxed">{translatedText || <span className="text-gray-400 italic">Waiting...</span>}</p>
-                </div>
+                    {/* Connect / Status */}
+                    {!isConnected ? (
+                        <button onClick={joinBroadcast}
+                            className="w-full py-5 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-black font-bold rounded-2xl shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/40 transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-3 text-lg">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728M9.172 15.828a5 5 0 010-7.071m5.656 0a5 5 0 010 7.071M12 12h.01" />
+                            </svg>
+                            Connect to Broadcast
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-3 px-5 py-3 surface-card">
+                            <div className="status-dot status-dot-live" />
+                            <span className="text-sm font-semibold text-yellow-400">Connected — receiving translations in real-time</span>
+                        </div>
+                    )}
 
-                {error && <div className="p-4 bg-red-100 text-red-700 rounded-md">{error}</div>}
-            </div>
-        </main>
+                    {/* Translation Display */}
+                    <div className="surface-card p-8 flex flex-col min-h-[400px] relative overflow-hidden">
+                        {isConnected && <div className="absolute inset-0 bg-yellow-500/3 pointer-events-none" />}
+
+                        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800/60">
+                            <div className={`status-dot ${isConnected ? 'status-dot-live' : 'status-dot-idle'}`} />
+                            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Real-Time Translation</h3>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <p className="text-2xl leading-relaxed text-zinc-100 font-semibold">
+                                {translatedText || (
+                                    <span className="text-zinc-600 italic font-normal text-lg">
+                                        {isConnected ? 'Waiting for the speaker to begin...' : 'Connect to start receiving translations'}
+                                    </span>
+                                )}
+                            </p>
+                        </div>
+
+                        {/* Audio wave indicator */}
+                        {isConnected && translatedText && (
+                            <div className="flex items-center gap-1 pt-4 border-t border-zinc-800/60 mt-4">
+                                {[0, 1, 2, 3, 4, 5, 6].map(i => (
+                                    <div key={i} className="w-1 bg-yellow-400/60 rounded-full animate-soundwave"
+                                        style={{ height: '16px', animationDelay: `${i * 0.1}s`, animationDuration: `${0.7 + i * 0.08}s` }} />
+                                ))}
+                                <span className="text-xs text-zinc-600 ml-3 font-medium">Receiving audio</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {error && (
+                        <div className="p-4 bg-red-400/10 border border-red-400/20 text-red-400 text-sm font-medium rounded-xl flex items-center gap-3">
+                            <span>⚠</span><span>{error}</span>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
     );
 }
