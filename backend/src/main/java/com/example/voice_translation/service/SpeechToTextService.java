@@ -57,10 +57,13 @@ public class SpeechToTextService {
     }
 
     public RecognitionConfig getRecognitionConfig(String languageCode) {
+        String model = "latest_long"; // Default model for better accuracy across languages
+
         return RecognitionConfig.newBuilder()
                 .setEncoding(RecognitionConfig.AudioEncoding.WEBM_OPUS)
                 .setLanguageCode(languageCode)
                 .setSampleRateHertz(48000)
+                .setModel(model)
                 .build();
     }
 
@@ -91,10 +94,13 @@ public class SpeechToTextService {
     }
 
     private StreamingRecognizeRequest buildConfigRequest(String languageCode) {
+        String model = "latest_long";
+
         RecognitionConfig config = RecognitionConfig.newBuilder()
                 .setEncoding(RecognitionConfig.AudioEncoding.WEBM_OPUS)
                 .setLanguageCode(languageCode)
                 .setSampleRateHertz(48000)
+                .setModel(model)
                 .build();
 
         StreamingRecognitionConfig streamingConfig = StreamingRecognitionConfig.newBuilder()
