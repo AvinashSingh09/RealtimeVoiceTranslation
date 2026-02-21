@@ -12,8 +12,10 @@ export default function AdminDashboard({ params }: { params: Promise<{ roomId: s
     const [voiceGender, setVoiceGender] = useState('NEUTRAL');
     const handleModelChange = (model: string) => {
         setVoiceModel(model);
-        if (model.startsWith('gemini') && !voiceGender.match(/^[A-Z][a-z]/)) setVoiceGender('Kore');
-        else if (!model.startsWith('gemini') && voiceGender.match(/^[A-Z][a-z]/)) setVoiceGender('NEUTRAL');
+        const isAdvancedAI = model.startsWith('gemini') || model.toLowerCase().includes('chirp');
+
+        if (isAdvancedAI && !voiceGender.match(/^[A-Z][a-z]/)) setVoiceGender('Kore');
+        else if (!isAdvancedAI && voiceGender.match(/^[A-Z][a-z]/)) setVoiceGender('NEUTRAL');
     };
     const [voicePrompt, setVoicePrompt] = useState('');
     const [isSaved, setIsSaved] = useState(false);
@@ -79,7 +81,7 @@ export default function AdminDashboard({ params }: { params: Promise<{ roomId: s
                     <div className="surface-card p-8 space-y-6">
                         <VoiceModelSelector value={voiceModel} onChange={handleModelChange} />
                         <VoiceGenderSelector value={voiceGender} onChange={setVoiceGender} voiceModel={voiceModel} />
-                        {voiceModel.startsWith('gemini') && (
+                        {(voiceModel.startsWith('gemini') || voiceModel.toLowerCase().includes('chirp')) && (
                             <div className="flex flex-col gap-2 animate-in fade-in duration-200">
                                 <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Expressiveness Prompt</label>
                                 <input type="text" value={voicePrompt} onChange={(e) => setVoicePrompt(e.target.value)}

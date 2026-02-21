@@ -7,6 +7,7 @@ const voiceModels = [
     { id: 'Studio', name: 'Studio' },
     { id: 'gemini-2.5-flash-tts', name: 'Gemini 2.5 Flash' },
     { id: 'gemini-2.5-pro-tts', name: 'Gemini 2.5 Pro' },
+    { id: 'chirp3-hd', name: 'Chirp 3 HD' }
 ];
 
 interface VoiceModelSelectorProps {

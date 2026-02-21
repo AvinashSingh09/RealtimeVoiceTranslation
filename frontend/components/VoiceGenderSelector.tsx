@@ -16,16 +16,16 @@ const geminiSpeakers = [
 ];
 
 export const VoiceGenderSelector: React.FC<VoiceGenderSelectorProps> = ({ value, onChange, voiceModel }) => {
-    const isGemini = voiceModel?.startsWith('gemini');
+    const isAdvancedAI = voiceModel?.startsWith('gemini') || voiceModel?.toLowerCase().includes('chirp');
 
     return (
         <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
-                {isGemini ? 'Speaker (Gemini)' : 'Voice Gender'}
+                {isAdvancedAI ? 'Speaker (Gemini/Chirp)' : 'Voice Gender'}
             </label>
             <select value={value} onChange={(e) => onChange(e.target.value)}
                 className="select-dark focus:ring-amber-500/50">
-                {isGemini ? (
+                {isAdvancedAI ? (
                     geminiSpeakers.map(s => (
                         <option key={s.id} value={s.id} className="bg-zinc-900 text-zinc-100">{s.name}</option>
                     ))
