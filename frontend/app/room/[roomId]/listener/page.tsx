@@ -52,9 +52,7 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
     const joinBroadcast = () => {
         if (!config) return;
         setTranslatedText('');
-        // Allow Vercel environment variables to ovverride the localhost port
-        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
-        ws.connect(`${wsUrl}?role=listener&roomId=${roomId}`);
+        ws.connect();
         setIsConnected(true);
     };
 

@@ -43,9 +43,8 @@ export default function SpeakerPage({ params }: { params: Promise<{ roomId: stri
         try {
             setOriginalText(''); setError('');
 
-            // Allow Vercel environment variables to ovverride the localhost port
-            const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
-            ws.connect(`${wsUrl}?role=speaker&roomId=${roomId}&sourceLang=${sourceLang}`);
+            // The correct URL with /translate parameters is already inside useWebSocket hook
+            ws.connect();
 
             setIsStreaming(true);
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
