@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useWebSocket } from '../../../../hooks/useWebSocket';
 import { LanguageSelector } from '../../../../components/LanguageSelector';
+import Navbar from '@/components/Navbar';
+import AnimatedBackground from '@/components/AnimatedBackground';
 
 export default function ListenerPage({ params }: { params: Promise<{ roomId: string }> }) {
     const resolvedParams = React.use(params);
@@ -84,26 +86,23 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
     );
 
     return (
-        <div className="min-h-screen flex flex-col">
-            {/* Status Bar */}
-            <div className={`h-1 transition-all duration-500 ${isConnected ? 'accent-border-gold' : 'bg-zinc-800'}`} />
+        <div className="min-h-screen flex flex-col surface-base relative overflow-hidden">
+            <AnimatedBackground />
+            <Navbar roomId={roomId as string} role="Listener" />
 
-            <main className="flex-1 flex flex-col items-center px-6 py-10">
-                <div className="w-full max-w-4xl space-y-8">
-                    {/* Top Bar */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
-                                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-zinc-100">Listener Station</h1>
-                                <p className="text-xs text-zinc-500 font-mono">Room: {roomId}</p>
-                            </div>
+            <main className="flex-1 flex flex-col items-center justify-center px-6 py-10 z-10 relative">
+                <div className="w-full max-w-3xl space-y-8 flex flex-col items-center">
+
+                    {/* Header Text & Language Selection */}
+                    <div className="flex flex-col items-center justify-center text-center gap-6">
+                        <div className="space-y-3">
+                            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-zinc-100">
+                                Live <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-transparent bg-clip-text">Translation</span>
+                            </h1>
+                            <p className="text-zinc-400">Join the room to hear the broadcast in your preferred language.</p>
                         </div>
-                        <div className="flex items-center gap-3">
+
+                        <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl backdrop-blur-md border border-white/10 shadow-lg">
                             <div className="w-48"><LanguageSelector label="" value={targetLang} onChange={setTargetLang} /></div>
                         </div>
                     </div>
@@ -111,32 +110,32 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
                     {/* Connect / Status */}
                     {!isConnected ? (
                         <button onClick={joinBroadcast}
-                            className="w-full py-5 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-black font-bold rounded-2xl shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/40 transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-3 text-lg">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            className="w-full max-w-sm py-4 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-bold rounded-2xl shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-3 text-lg">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728M9.172 15.828a5 5 0 010-7.071m5.656 0a5 5 0 010 7.071M12 12h.01" />
                             </svg>
                             Connect to Broadcast
                         </button>
                     ) : (
-                        <div className="flex items-center gap-3 px-5 py-3 surface-card">
-                            <div className="status-dot status-dot-live" />
-                            <span className="text-sm font-semibold text-yellow-400">Connected — receiving translations in real-time</span>
+                        <div className="flex items-center gap-3 px-5 py-3 surface-elevated border-yellow-500/20 rounded-2xl backdrop-blur-md">
+                            <div className="status-dot status-dot-live shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+                            <span className="text-sm font-semibold text-yellow-400 tracking-wide">Connected — receiving translations in real-time</span>
                         </div>
                     )}
 
                     {/* Translation Display */}
-                    <div className="surface-card p-8 flex flex-col min-h-[400px] relative overflow-hidden">
-                        {isConnected && <div className="absolute inset-0 bg-yellow-500/3 pointer-events-none" />}
+                    <div className="w-full surface-card glow-gold p-8 flex flex-col h-[400px] sm:h-[500px] relative overflow-hidden mt-4">
+                        {isConnected && <div className="absolute inset-0 bg-yellow-500/5 animate-glow pointer-events-none" />}
 
-                        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800/60">
-                            <div className={`status-dot ${isConnected ? 'status-dot-live' : 'status-dot-idle'}`} />
+                        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+                            <div className={`status-dot ${isConnected ? 'status-dot-live shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse' : 'status-dot-idle'}`} />
                             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Real-Time Translation</h3>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            <p className="text-2xl leading-relaxed text-zinc-100 font-semibold">
+                        <div className="absolute top-[88px] left-0 right-0 bottom-0 overflow-y-auto custom-scrollbar px-8 pb-8">
+                            <p className="text-2xl sm:text-3xl leading-relaxed text-zinc-100 font-semibold tracking-wide">
                                 {translatedText || (
-                                    <span className="text-zinc-600 italic font-normal text-lg">
+                                    <span className="text-zinc-500 font-normal text-lg sm:text-xl">
                                         {isConnected ? 'Waiting for the speaker to begin...' : 'Connect to start receiving translations'}
                                     </span>
                                 )}
@@ -145,18 +144,20 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
 
                         {/* Audio wave indicator */}
                         {isConnected && translatedText && (
-                            <div className="flex items-center gap-1 pt-4 border-t border-zinc-800/60 mt-4">
-                                {[0, 1, 2, 3, 4, 5, 6].map(i => (
-                                    <div key={i} className="w-1 bg-yellow-400/60 rounded-full animate-soundwave"
+                            <div className="flex items-center justify-center gap-1 pt-6 border-t border-white/10 mt-6 relative z-10">
+                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
+                                    <div key={i} className="w-1.5 bg-yellow-400/80 rounded-full animate-soundwave shadow-[0_0_8px_rgba(251,191,36,0.5)]"
                                         style={{ height: '16px', animationDelay: `${i * 0.1}s`, animationDuration: `${0.7 + i * 0.08}s` }} />
                                 ))}
-                                <span className="text-xs text-zinc-600 ml-3 font-medium">Receiving audio</span>
+                                <span className="absolute bg-black/50 px-3 py-1 rounded-full text-[10px] text-yellow-400 font-bold tracking-widest uppercase border border-yellow-500/20 backdrop-blur-sm -top-3">
+                                    Incoming Audio
+                                </span>
                             </div>
                         )}
                     </div>
 
                     {error && (
-                        <div className="p-4 bg-red-400/10 border border-red-400/20 text-red-400 text-sm font-medium rounded-xl flex items-center gap-3">
+                        <div className="p-4 bg-red-400/10 border border-red-400/20 text-red-400 text-sm font-medium rounded-xl flex items-center gap-3 w-full backdrop-blur-md">
                             <span>⚠</span><span>{error}</span>
                         </div>
                     )}

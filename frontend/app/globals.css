@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #fafafa;
-  --surface-1: #18181b;
-  /* zinc-900 */
-  --surface-2: #27272a;
-  /* zinc-800 */
-  --border: #3f3f46;
-  /* zinc-700 */
+  --background: #050505;
+  /* Deep Onyx/Vantablack */
+  --foreground: #f8fafc;
+  --surface-1: #0f0f11;
+  --surface-2: #18181b;
+  --border: #27272a;
+
+  /* Unified Accent */
+  --accent-gold: #fbbf24;
 }
 
 @theme inline {
@@ -18,10 +19,11 @@
   --font-mono: var(--font-geist-mono), 'JetBrains Mono', monospace;
 
   --animate-shimmer: shimmer 3s linear infinite;
-  --animate-pulse-slow: pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-pulse-slow: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-float: float 6s ease-in-out infinite;
   --animate-glow: glow-pulse 2s ease-in-out infinite;
   --animate-soundwave: soundwave 1.2s ease-in-out infinite;
+  --animate-border-spin: border-spin 4s linear infinite;
 }
 
 /* --- Keyframes --- */
@@ -32,6 +34,12 @@
 
   100% {
     background-position: 200% 0;
+  }
+}
+
+@keyframes border-spin {
+  100% {
+    transform: rotate(360deg);
   }
 }
 
@@ -106,26 +114,36 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- Surface System (layered depth) --- */
+/* --- Midnight Studio Glassmorphism --- */
 .surface-base {
-  @apply bg-zinc-950 border border-zinc-800/60;
+  @apply bg-[#050505] min-h-screen selection:bg-white/20;
 }
 
 .surface-card {
-  @apply bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50 rounded-2xl;
+  @apply bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-2xl;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
 }
 
 .surface-elevated {
-  @apply bg-zinc-800/40 backdrop-blur-md border border-zinc-700/40 rounded-xl;
+  @apply bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl;
 }
 
-/* --- Input System --- */
+/* --- Ambient Gold Glow --- */
+.glow-gold {
+  box-shadow: 0 0 40px -10px rgba(251, 191, 36, 0.15);
+}
+
+/* --- Input System (Frosted) --- */
 .input-dark {
-  @apply bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-zinc-100 placeholder-zinc-500 font-medium focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-all duration-200;
+  @apply bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 text-zinc-100 placeholder-zinc-500 font-medium focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/30 transition-all duration-300 backdrop-blur-md;
 }
 
 .select-dark {
-  @apply bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-zinc-100 font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-all duration-200 bg-[url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='12'%20height='12'%20fill='%2371717a'%20viewBox='0%200%2016%2016'%3E%3Cpath%20d='M7.247%2011.14L2.451%205.658C1.885%205.013%202.345%204%203.204%204h9.592a1%201%200%20.753%201.659l-4.796%205.48a1%201%200%20-1.506%200z'/%3E%3C/svg%3E")] bg-[length:12px] bg-[right_16px_center] bg-no-repeat;
+  @apply bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 text-zinc-100 font-medium appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/30 transition-all duration-300 backdrop-blur-md hover:bg-white/5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a1a1aa' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 .753 1.659l-4.796 5.48a1 1 0 -1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 12px;
 }
 
 /* --- Accent Border (gold shimmer) --- */

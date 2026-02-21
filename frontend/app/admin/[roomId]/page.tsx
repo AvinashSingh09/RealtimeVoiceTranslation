@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { VoiceModelSelector } from '../../../components/VoiceModelSelector';
 import { VoiceGenderSelector } from '../../../components/VoiceGenderSelector';
+import Navbar from '@/components/Navbar';
+import AnimatedBackground from '@/components/AnimatedBackground';
 
 export default function AdminDashboard({ params }: { params: Promise<{ roomId: string }> }) {
     const resolvedParams = React.use(params);
@@ -55,67 +57,84 @@ export default function AdminDashboard({ params }: { params: Promise<{ roomId: s
     };
 
     return (
-        <div className="min-h-screen flex flex-col">
-            {/* Top accent line */}
-            <div className="h-1 accent-border-gold" />
+        <div className="min-h-screen flex flex-col surface-base relative overflow-hidden">
+            <AnimatedBackground />
+            <Navbar roomId={roomId as string} role="Admin" />
 
-            <main className="flex-1 flex flex-col items-center px-6 py-12">
-                <div className="w-full max-w-2xl space-y-8">
-                    {/* Header */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
-                                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-zinc-100">Room Configuration</h1>
-                                <p className="text-sm text-zinc-500">Room <code className="px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded font-mono text-xs border border-yellow-500/20">{roomId}</code></p>
-                            </div>
-                        </div>
+            <main className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-16 px-6 sm:px-8 py-12 lg:py-16 max-w-7xl mx-auto w-full z-10">
+
+                {/* Left: Typography & Share Links */}
+                <div className="w-full lg:w-1/2 flex flex-col gap-8 max-w-2xl items-center lg:items-start text-center lg:text-left">
+                    <div className="flex items-center justify-center lg:justify-start gap-2">
+                        <div className="status-dot status-dot-live" />
+                        <span className="text-xs font-bold text-yellow-400 uppercase tracking-widest">Pipeline Control</span>
                     </div>
 
-                    {/* Config Card */}
-                    <div className="surface-card p-8 space-y-6">
+                    <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-[1.05]">
+                        <span className="text-zinc-100">Configure</span>
+                        <br />
+                        <span className="bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 text-transparent bg-clip-text">
+                            Your Broadcast
+                        </span>
+                    </h1>
+
+                    <p className="text-lg text-zinc-400 leading-relaxed max-w-xl">
+                        Select your AI voice model and tune the expressiveness prompt before locking the room configuration.
+                    </p>
+
+                    {/* Share Links moved to left column */}
+                    <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        {(['speaker', 'listener'] as const).map(role => (
+                            <div key={role} className="surface-elevated p-5 space-y-3 group hover:bg-white/5 transition-colors duration-300">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-400">
+                                        <span className="text-xl">{role === 'speaker' ? '🎙️' : '🎧'}</span>
+                                    </div>
+                                    <h3 className="font-bold text-zinc-100 capitalize">{role} Portal</h3>
+                                </div>
+                                <div className="relative">
+                                    <p className="text-xs text-zinc-400 font-mono truncate bg-black/40 px-3 py-2.5 rounded-lg border border-white/5 shadow-inner">{getLink(role)}</p>
+                                    <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/40 to-transparent pointer-events-none rounded-r-lg" />
+                                </div>
+                                <button onClick={() => copyLink(role)}
+                                    className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all duration-300 active:scale-[0.98] ${copied === role
+                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                                        : 'bg-white/5 hover:bg-white/10 text-zinc-200 border border-white/10 hover:border-white/20'
+                                        }`}>
+                                    {copied === role ? '✓ Copied' : 'Copy Link'}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Right: Config Card (Floating) */}
+                <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
+                    <div className="w-full max-w-md surface-card glow-gold p-8 space-y-6 relative overflow-hidden">
+                        {/* Decorative background glow */}
+                        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none" />
+
                         <VoiceModelSelector value={voiceModel} onChange={handleModelChange} />
                         <VoiceGenderSelector value={voiceGender} onChange={setVoiceGender} voiceModel={voiceModel} />
+
                         {(voiceModel.startsWith('gemini') || voiceModel.toLowerCase().includes('chirp')) && (
-                            <div className="flex flex-col gap-2 animate-in fade-in duration-200">
+                            <div className="flex flex-col gap-2 animate-in fade-in duration-300">
                                 <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Expressiveness Prompt</label>
                                 <input type="text" value={voicePrompt} onChange={(e) => setVoicePrompt(e.target.value)}
                                     placeholder="e.g. Speak dramatically and excitedly" className="input-dark focus:ring-yellow-500/50" />
                             </div>
                         )}
-                        <button onClick={saveRoomConfig}
-                            className={`w-full py-4 mt-4 font-bold rounded-xl transition-all duration-300 active:scale-[0.97] flex justify-center items-center gap-2 text-base ${isSaved
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black shadow-lg shadow-yellow-500/20'
-                                }`}>
-                            {isSaved ? '✓ Saved' : 'Save Configuration'}
-                        </button>
-                        {error && <p className="text-sm text-red-400 bg-red-400/10 px-4 py-3 rounded-xl border border-red-400/20 text-center">{error}</p>}
-                    </div>
 
-                    {/* Share Links */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {(['speaker', 'listener'] as const).map(role => (
-                            <div key={role} className="surface-card p-5 space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg">{role === 'speaker' ? '🎙️' : '🎧'}</span>
-                                    <h3 className="font-bold text-zinc-100 capitalize">{role} Link</h3>
-                                </div>
-                                <p className="text-xs text-zinc-500 font-mono truncate bg-zinc-800/50 px-3 py-2.5 rounded-lg border border-zinc-700/30">{getLink(role)}</p>
-                                <button onClick={() => copyLink(role)}
-                                    className={`w-full py-3 rounded-xl text-sm font-bold transition-all duration-200 active:scale-[0.97] ${copied === role
-                                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
-                                        }`}>
-                                    {copied === role ? '✓ Copied!' : 'Copy Link'}
-                                </button>
-                            </div>
-                        ))}
+                        <div className="pt-4 border-t border-white/5">
+                            <button onClick={saveRoomConfig}
+                                className={`w-full py-4 font-bold rounded-xl transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2 text-base ${isSaved
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                                    : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)]'
+                                    }`}>
+                                {isSaved ? '✓ Locked' : 'Save Configuration'}
+                            </button>
+                        </div>
+                        {error && <p className="text-sm text-red-400 bg-red-500/10 px-4 py-3 rounded-xl border border-red-500/20 text-center backdrop-blur-md">{error}</p>}
                     </div>
                 </div>
             </main>
