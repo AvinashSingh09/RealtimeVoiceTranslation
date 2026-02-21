@@ -61,9 +61,7 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
         setTranslatedText('');
 
         // Initialize and unlock the persistent audio element synchronously inside the click handler to bypass iOS Safari auto-play restrictions
-        if (!audioRef.current) {
-            audioRef.current = new Audio();
-            audioRef.current.onended = () => playNextInQueue();
+        if (audioRef.current) {
             audioRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
             audioRef.current.play().catch(() => { });
         }
@@ -164,6 +162,9 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
                     )}
                 </div>
             </main>
+
+            {/* Hidden audio element for Safari compatibility */}
+            <audio ref={audioRef} className="hidden" playsInline onEnded={playNextInQueue} />
         </div>
     );
 }

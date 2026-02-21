@@ -78,9 +78,7 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
     try {
       resetState();
 
-      if (!audioRef.current) {
-        audioRef.current = new Audio();
-        audioRef.current.onended = () => playNextInQueue();
+      if (audioRef.current) {
         audioRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
         audioRef.current.play().catch(() => { });
       }
@@ -123,9 +121,7 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
     resetState();
     const audioEl = fileAudioRef.current;
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.onended = () => playNextInQueue();
+    if (audioRef.current) {
       audioRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
       audioRef.current.play().catch(() => { });
     }
@@ -239,6 +235,9 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
 
         {error && <div className="p-4 bg-red-100 text-red-700 rounded-md border border-red-200">{error}</div>}
       </div>
+
+      {/* Hidden audio element for Safari compatibility */}
+      <audio ref={audioRef} className="hidden" playsInline onEnded={playNextInQueue} />
     </main>
   );
 }
