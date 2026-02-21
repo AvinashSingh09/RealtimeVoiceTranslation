@@ -23,7 +23,8 @@ export default function AdminDashboard({ params }: { params: Promise<{ roomId: s
     const saveRoomConfig = async () => {
         try {
             const hostname = window.location.hostname;
-            const res = await fetch(`http://${hostname}:8080/api/rooms`, {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || `http://${hostname}:8080`;
+            const res = await fetch(`${apiUrl}/api/rooms`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roomId, voiceModel, voiceGender, voicePrompt })
             });

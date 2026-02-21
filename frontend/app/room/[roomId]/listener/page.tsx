@@ -19,7 +19,8 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
 
     useEffect(() => {
         const hostname = window.location.hostname;
-        fetch(`http://${hostname}:8080/api/rooms/${roomId}`)
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || `http://${hostname}:8080`;
+        fetch(`${apiUrl}/api/rooms/${roomId}`)
             .then(res => res.json())
             .then(setConfig).catch(() => setError('Room not found or not set by Admin'));
     }, [roomId]);
