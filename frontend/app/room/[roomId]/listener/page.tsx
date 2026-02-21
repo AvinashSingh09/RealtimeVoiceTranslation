@@ -5,6 +5,7 @@ import { useWebSocket } from '../../../../hooks/useWebSocket';
 import { LanguageSelector } from '../../../../components/LanguageSelector';
 import Navbar from '@/components/Navbar';
 import AnimatedBackground from '@/components/AnimatedBackground';
+import { AlertTriangle } from 'lucide-react';
 
 export default function ListenerPage({ params }: { params: Promise<{ roomId: string }> }) {
     const resolvedParams = React.use(params);
@@ -132,7 +133,7 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
                             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Real-Time Translation</h3>
                         </div>
 
-                        <div className="absolute top-[88px] left-0 right-0 bottom-0 overflow-y-auto custom-scrollbar px-8 pb-8">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-2 sm:px-4">
                             <p className="text-2xl sm:text-3xl leading-relaxed text-zinc-100 font-semibold tracking-wide">
                                 {translatedText || (
                                     <span className="text-zinc-500 font-normal text-lg sm:text-xl">
@@ -144,7 +145,7 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
 
                         {/* Audio wave indicator */}
                         {isConnected && translatedText && (
-                            <div className="flex items-center justify-center gap-1 pt-6 border-t border-white/10 mt-6 relative z-10">
+                            <div className="flex items-center justify-center gap-1 pt-6 border-t border-white/10 mt-6 relative shrink-0">
                                 {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
                                     <div key={i} className="w-1.5 bg-yellow-400/80 rounded-full animate-soundwave shadow-[0_0_8px_rgba(251,191,36,0.5)]"
                                         style={{ height: '16px', animationDelay: `${i * 0.1}s`, animationDuration: `${0.7 + i * 0.08}s` }} />
@@ -158,7 +159,7 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
 
                     {error && (
                         <div className="p-4 bg-red-400/10 border border-red-400/20 text-red-400 text-sm font-medium rounded-xl flex items-center gap-3 w-full backdrop-blur-md">
-                            <span>⚠</span><span>{error}</span>
+                            <AlertTriangle className="w-4 h-4 min-w-[16px]" /><span>{error}</span>
                         </div>
                     )}
                 </div>

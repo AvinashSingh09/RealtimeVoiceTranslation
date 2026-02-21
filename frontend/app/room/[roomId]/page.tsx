@@ -5,6 +5,7 @@ import { LanguageSelector } from '../../../components/LanguageSelector';
 import { VoiceModelSelector } from '../../../components/VoiceModelSelector';
 import { VoiceGenderSelector } from '../../../components/VoiceGenderSelector';
 import { useWebSocket } from '../../../hooks/useWebSocket';
+import { Mic, Headphones, Square } from 'lucide-react';
 
 export default function RoomPage({ params }: { params: { roomId: string } }) {
   const [role, setRole] = useState<'speaker' | 'listener' | null>(null);
@@ -163,13 +164,13 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
               onClick={() => setRole('speaker')}
               className="py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-lg shadow-md transition"
             >
-              🎤 Join as Speaker
+              <div className="flex items-center justify-center gap-2"><Mic className="w-5 h-5" /> Join as Speaker</div>
             </button>
             <button
               onClick={() => setRole('listener')}
               className="py-4 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-bold text-lg shadow-md transition"
             >
-              🎧 Join as Listener
+              <div className="flex items-center justify-center gap-2"><Headphones className="w-5 h-5" /> Join as Listener</div>
             </button>
           </div>
         </div>
@@ -182,8 +183,11 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
       <div className="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 space-y-8 mt-12">
         <div className="flex justify-between items-center border-b pb-4 dark:border-gray-700">
           <div>
-            <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
-              {role === 'speaker' ? '🎙️ Speaker Console' : '🎧 Listener View'}
+            <h1 className="text-3xl font-extrabold flex items-center gap-3">
+              {role === 'speaker' ? <Mic className="w-8 h-8 text-blue-500" /> : <Headphones className="w-8 h-8 text-purple-500" />}
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
+                {role === 'speaker' ? 'Speaker Console' : 'Listener View'}
+              </span>
             </h1>
             <p className="text-sm font-mono text-gray-500 mt-1">Room ID: {params.roomId}</p>
           </div>
@@ -202,7 +206,13 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
               <button onClick={isStreaming ? stopMic : startMic}
                 className={`px-8 py-4 rounded-full font-bold text-white transition-all shadow-lg text-lg ${isStreaming ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-blue-500 hover:bg-blue-600'}`}
               >
-                {isStreaming ? '🛑 Stop Broadcasting' : '🎙️ Start Broadcasting'}
+                <span className="flex items-center justify-center gap-2">
+                  {isStreaming ? (
+                    <><Square className="w-5 h-5" fill="currentColor" /> Stop Broadcasting</>
+                  ) : (
+                    <><Mic className="w-5 h-5" /> Start Broadcasting</>
+                  )}
+                </span>
               </button>
               {isStreaming && <p className="mt-4 text-red-500 font-semibold animate-pulse">Live...</p>}
             </div>

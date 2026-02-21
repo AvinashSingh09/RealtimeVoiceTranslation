@@ -5,6 +5,7 @@ import { useWebSocket } from '../../../../hooks/useWebSocket';
 import { LanguageSelector } from '../../../../components/LanguageSelector';
 import Navbar from '@/components/Navbar';
 import AnimatedBackground from '@/components/AnimatedBackground';
+import { AlertTriangle } from 'lucide-react';
 
 export default function SpeakerPage({ params }: { params: Promise<{ roomId: string }> }) {
     const resolvedParams = React.use(params);
@@ -199,7 +200,7 @@ export default function SpeakerPage({ params }: { params: Promise<{ roomId: stri
 
                     {error && (
                         <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium rounded-xl flex items-center gap-3 w-full backdrop-blur-md">
-                            <span>⚠</span><span>{error}</span>
+                            <AlertTriangle className="w-4 h-4 min-w-[16px]" /><span>{error}</span>
                         </div>
                     )}
                 </div>

@@ -1,28 +1,63 @@
 package com.example.voice_translation.service;
 
 import com.example.voice_translation.model.RoomConfig;
+import com.example.voice_translation.model.RoomEntity;
+import com.example.voice_translation.repository.RoomRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class RoomService {
     
-    // In-memory store for room configurations
-    private final ConcurrentHashMap<String, RoomConfig> rooms = new ConcurrentHashMap<>();
+    private final RoomRepository roomRepository;
+
+    @Autowired
+    public RoomService(RoomRepository roomRepository) {
+        this.roomRepository = roomRepository;
+    }
 
     public RoomConfig createRoom(RoomConfig config) {
-        // Generate a random 8-character room ID if not provided
-        if (config.getRoomId() == null || config.getRoomId().trim().isEmpty()) {
-            config.setRoomId(UUID.randomUUID().toString().substring(0, 8));
+        if (config.getRoomId() == null || config.getRoomId().isEmpty()) {
+            config.setRoomId(UUID.randomUUID().toString());
         }
         
-        rooms.put(config.getRoomId(), config);
+        UUID uuidId = UUID.fromString(config.getRoomId());
+        
+        // Get or Create
+        RoomEntity entity = roomRepository.findById(uuidId)
+                .orElse(new RoomEntity());
+        
+        if (entity.getId() == null) {
+            entity.setId(uuidId);
+        }
+        
+        entity.setVoiceModel(config.getVoiceModel());
+        entity.setVoiceGender(config.getVoiceGender());
+        entity.setVoicePrompt(config.getVoicePrompt());
+        
+        roomRepository.save(entity);
         return config;
     }
 
     public RoomConfig getRoom(String roomId) {
-        return rooms.get(roomId);
+        try {
+            UUID uuidId = UUID.fromString(roomId);
+            Optional<RoomEntity> entityOpt = roomRepository.findById(uuidId);
+            if (entityOpt.isPresent()) {
+                RoomEntity entity = entityOpt.get();
+                return new RoomConfig(
+                    entity.getId().toString(),
+                    entity.getVoiceModel(),
+                    entity.getVoiceGender(),
+                    entity.getVoicePrompt()
+                );
+            }
+        } catch (IllegalArgumentException e) {
+            System.err.println("Invalid Room ID format: " + roomId);
+        }
+        return null;
     }
 }

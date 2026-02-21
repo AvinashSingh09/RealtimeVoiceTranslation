@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import LanguageDemo from '@/components/LanguageDemo';
 
@@ -11,7 +11,7 @@ export default function LandingPage() {
     const [joinId, setJoinId] = useState('');
 
     const createSession = () => {
-        router.push(`/admin/${uuidv4().substring(0, 8)}`);
+        router.push(`/admin/dashboard`);
     };
 
     const joinSession = (e: React.FormEvent) => {
