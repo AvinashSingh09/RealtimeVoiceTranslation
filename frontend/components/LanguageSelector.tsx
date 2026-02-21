@@ -7,12 +7,17 @@ interface LanguageSelectorProps {
 }
 
 const languages = [
-  { code: 'en-US', name: 'English' },
+  { code: 'en-US', name: 'English (US)' },
+  { code: 'en-IN', name: 'English (India)' },
   { code: 'hi-IN', name: 'Hindi' },
-  { code: 'mr-IN', name: 'Marathi' },
-  { code: 'gu-IN', name: 'Gujarati' },
   { code: 'bn-IN', name: 'Bengali' },
-  { code: 'ne-NP', name: 'Nepali' },
+  { code: 'gu-IN', name: 'Gujarati' },
+  { code: 'kn-IN', name: 'Kannada' },
+  { code: 'ml-IN', name: 'Malayalam' },
+  { code: 'mr-IN', name: 'Marathi' },
+  { code: 'pa-IN', name: 'Punjabi' },
+  { code: 'ta-IN', name: 'Tamil' },
+  { code: 'te-IN', name: 'Telugu' },
 ];
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ label, value, onChange }) => {
