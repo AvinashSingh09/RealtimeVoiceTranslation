@@ -16,6 +16,7 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
 
     const audioQueueRef = useRef<Blob[]>([]);
     const isPlayingQueue = useRef(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         const hostname = window.location.hostname;
@@ -29,10 +30,16 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
         if (audioQueueRef.current.length === 0) { isPlayingQueue.current = false; return; }
         isPlayingQueue.current = true;
         const blob = audioQueueRef.current.shift();
-        if (!blob) return;
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.onended = () => playNextInQueue();
-        try { await audio.play(); } catch { isPlayingQueue.current = false; }
+        if (!blob || !audioRef.current) { isPlayingQueue.current = false; return; }
+
+        audioRef.current.src = URL.createObjectURL(blob);
+        try {
+            await audioRef.current.play();
+        } catch (err) {
+            console.error('Audio playback failed (likely iOS block):', err);
+            isPlayingQueue.current = false;
+            playNextInQueue(); // Try to skip and continue
+        }
     }, []);
 
     const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8080/ws`;
@@ -52,6 +59,15 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
     const joinBroadcast = () => {
         if (!config) return;
         setTranslatedText('');
+
+        // Initialize and unlock the persistent audio element synchronously inside the click handler to bypass iOS Safari auto-play restrictions
+        if (!audioRef.current) {
+            audioRef.current = new Audio();
+            audioRef.current.onended = () => playNextInQueue();
+            audioRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+            audioRef.current.play().catch(() => { });
+        }
+
         ws.connect();
         setIsConnected(true);
     };

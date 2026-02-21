@@ -24,15 +24,22 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
   const fileAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioQueueRef = useRef<Blob[]>([]);
   const isPlayingQueue = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const playNextInQueue = useCallback(async () => {
     if (audioQueueRef.current.length === 0) { isPlayingQueue.current = false; return; }
     isPlayingQueue.current = true;
     const blob = audioQueueRef.current.shift();
-    if (!blob) return;
-    const audio = new Audio(URL.createObjectURL(blob));
-    audio.onended = () => playNextInQueue();
-    try { await audio.play(); } catch { isPlayingQueue.current = false; }
+    if (!blob || !audioRef.current) { isPlayingQueue.current = false; return; }
+
+    audioRef.current.src = URL.createObjectURL(blob);
+    try {
+      await audioRef.current.play();
+    } catch (err) {
+      console.error('Audio playback failed (likely iOS block):', err);
+      isPlayingQueue.current = false;
+      playNextInQueue();
+    }
   }, []);
 
   const onWebSocketMessage = useCallback((event: MessageEvent) => {
@@ -70,6 +77,14 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
     if (!navigator.mediaDevices) return;
     try {
       resetState();
+
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
+        audioRef.current.onended = () => playNextInQueue();
+        audioRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+        audioRef.current.play().catch(() => { });
+      }
+
       // The correct URL with /translate parameters is already inside useWebSocket hook
       ws.connect();
       setIsStreaming(true);
@@ -107,6 +122,13 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
     if (!fileAudioRef.current) return;
     resetState();
     const audioEl = fileAudioRef.current;
+
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.onended = () => playNextInQueue();
+      audioRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+      audioRef.current.play().catch(() => { });
+    }
 
     // @ts-ignore
     if (!audioEl.captureStream) { setError("Browser doesn't support captureStream."); return; }
