@@ -18,6 +18,7 @@ const languages = [
   { code: 'pa-IN', name: 'Punjabi' },
   { code: 'ta-IN', name: 'Tamil' },
   { code: 'te-IN', name: 'Telugu' },
+  { code: 'ne-NP', name: 'Nepali' },
 ];
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ label, value, onChange }) => {
