@@ -77,20 +77,37 @@ public class TextToSpeechService {
                         input, voiceBuilder.build(), audioConfig);
                 audioData = response.getAudioContent().toByteArray();
             } catch (Exception e) {
-                System.err.println("Voice " + voiceBuilder.getName() + " not found, falling back to Standard for " + languageCode);
+                System.err.println("Voice " + voiceBuilder.getName() + " not found, attempting fallback to WaveNet for " + languageCode);
                 
-                // Fallback attempt with just the language code (auto-assigns standard default)
-                VoiceSelectionParams fallbackVoice = VoiceSelectionParams.newBuilder()
+                // First Fallback: Try WaveNet
+                String suffix = ssmlGender == SsmlVoiceGender.MALE ? "-B" : "-A";
+                VoiceSelectionParams wavenetVoice = VoiceSelectionParams.newBuilder()
                     .setLanguageCode(languageCode)
+                    .setName(languageCode + "-Wavenet" + suffix)
                     .setSsmlGender(ssmlGender)
                     .build();
-                
+
                 try {
-                    SynthesizeSpeechResponse fallbackResponse = textToSpeechClient.synthesizeSpeech(
-                            input, fallbackVoice, audioConfig);
-                    audioData = fallbackResponse.getAudioContent().toByteArray();
-                } catch (Exception fallbackErr) {
-                    throw new IOException("TTS Failed even on fallback: " + fallbackErr.getMessage());
+                    SynthesizeSpeechResponse wavenetResponse = textToSpeechClient.synthesizeSpeech(
+                            input, wavenetVoice, audioConfig);
+                    audioData = wavenetResponse.getAudioContent().toByteArray();
+                    System.out.println("Successfully fell back to WaveNet for " + languageCode);
+                } catch (Exception wavenetErr) {
+                    System.err.println("WaveNet voice " + wavenetVoice.getName() + " not found, falling back to Standard for " + languageCode);
+                    
+                    // Final Fallback: Standard (just language code)
+                    VoiceSelectionParams standardVoice = VoiceSelectionParams.newBuilder()
+                        .setLanguageCode(languageCode)
+                        .setSsmlGender(ssmlGender)
+                        .build();
+                    
+                    try {
+                        SynthesizeSpeechResponse standardResponse = textToSpeechClient.synthesizeSpeech(
+                                input, standardVoice, audioConfig);
+                        audioData = standardResponse.getAudioContent().toByteArray();
+                    } catch (Exception standardErr) {
+                        throw new IOException("TTS Failed even on Standard fallback: " + standardErr.getMessage());
+                    }
                 }
             }
         }
