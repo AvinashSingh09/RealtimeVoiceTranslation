@@ -53,8 +53,10 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
     }
   }, [playNextInQueue]);
 
+  const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8080/ws`;
+
   const ws = useWebSocket({
-    url: `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8080/ws/translate?source=${sourceLang}&target=${targetLang}&voice=${voiceModel}&gender=${voiceGender}&prompt=${encodeURIComponent(voicePrompt)}`,
+    url: `${baseWsUrl}/translate?source=${sourceLang}&target=${targetLang}&voice=${voiceModel}&gender=${voiceGender}&prompt=${encodeURIComponent(voicePrompt)}`,
     onMessage: onWebSocketMessage,
   });
 

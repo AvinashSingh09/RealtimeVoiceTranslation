@@ -25,8 +25,10 @@ export default function SpeakerPage({ params }: { params: Promise<{ roomId: stri
         }
     }, [sourceAudio]);
 
+    const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8080/ws`;
+
     const ws = useWebSocket({
-        url: `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8080/ws/translate?roomId=${roomId}&role=speaker&source=${sourceLang}&target=en-US&voice=Standard&gender=NEUTRAL&prompt=`,
+        url: `${baseWsUrl}/translate?roomId=${roomId}&role=speaker&source=${sourceLang}&target=en-US&voice=Standard&gender=NEUTRAL&prompt=`,
         onMessage: useCallback((e: MessageEvent) => {
             if (typeof e.data === 'string' && e.data.startsWith('TRANSCRIPT:')) {
                 setOriginalText(prev => (prev + " " + e.data.replace('TRANSCRIPT:', '')).trim());

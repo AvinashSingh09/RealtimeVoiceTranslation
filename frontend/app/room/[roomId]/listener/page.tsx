@@ -35,8 +35,10 @@ export default function ListenerPage({ params }: { params: Promise<{ roomId: str
         try { await audio.play(); } catch { isPlayingQueue.current = false; }
     }, []);
 
+    const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8080/ws`;
+
     const ws = useWebSocket({
-        url: config ? `ws://${window.location.hostname}:8080/ws/translate?roomId=${roomId}&role=listener&source=en-US&target=${targetLang}&voice=${config.voiceModel}&gender=${config.voiceGender}&prompt=${encodeURIComponent(config.voicePrompt)}` : '',
+        url: config ? `${baseWsUrl}/translate?roomId=${roomId}&role=listener&source=en-US&target=${targetLang}&voice=${config.voiceModel}&gender=${config.voiceGender}&prompt=${encodeURIComponent(config.voicePrompt)}` : '',
         onMessage: useCallback((e: MessageEvent) => {
             if (typeof e.data === 'string' && e.data.startsWith('TRANSLATION:')) {
                 setTranslatedText(prev => (prev + " " + e.data.replace('TRANSLATION:', '')).trim());
