@@ -1,56 +1,51 @@
 package com.example.voice_translation.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
-import java.util.UUID;
 
-@Entity
-@Table(name = "rooms")
+@Document(collection = "rooms")
 public class RoomEntity {
 
     @Id
-    @Column(name = "id", nullable = false)
-    private UUID id;
+    private String id;
 
-    @Column(name = "admin_id", nullable = false)
-    private UUID adminId;
+    @Field("admin_id")
+    private String adminId;
 
-    @Column(name = "voice_model", nullable = false)
+    @Field("voice_model")
     private String voiceModel;
 
-    @Column(name = "voice_gender", nullable = false)
+    @Field("voice_gender")
     private String voiceGender;
 
-    @Column(name = "voice_prompt", columnDefinition = "TEXT")
+    @Field("voice_prompt")
     private String voicePrompt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Field("created_at")
     private Instant createdAt;
 
-    // Default Constructor for JPA
     public RoomEntity() {
+        this.createdAt = Instant.now();
     }
 
-    public RoomEntity(UUID id, UUID adminId, String voiceModel, String voiceGender, String voicePrompt) {
+    public RoomEntity(String id, String adminId, String voiceModel, String voiceGender, String voicePrompt) {
         this.id = id;
         this.adminId = adminId;
         this.voiceModel = voiceModel;
         this.voiceGender = voiceGender;
         this.voicePrompt = voicePrompt;
+        this.createdAt = Instant.now();
     }
 
     // Getters and Setters
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public UUID getAdminId() { return adminId; }
-    public void setAdminId(UUID adminId) { this.adminId = adminId; }
+    public String getAdminId() { return adminId; }
+    public void setAdminId(String adminId) { this.adminId = adminId; }
 
     public String getVoiceModel() { return voiceModel; }
     public void setVoiceModel(String voiceModel) { this.voiceModel = voiceModel; }

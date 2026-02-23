@@ -24,14 +24,14 @@ public class RoomService {
             config.setRoomId(UUID.randomUUID().toString());
         }
         
-        UUID uuidId = UUID.fromString(config.getRoomId());
+        String roomId = config.getRoomId();
         
         // Get or Create
-        RoomEntity entity = roomRepository.findById(uuidId)
+        RoomEntity entity = roomRepository.findById(roomId)
                 .orElse(new RoomEntity());
         
         if (entity.getId() == null) {
-            entity.setId(uuidId);
+            entity.setId(roomId);
         }
         
         entity.setVoiceModel(config.getVoiceModel());
@@ -43,20 +43,15 @@ public class RoomService {
     }
 
     public RoomConfig getRoom(String roomId) {
-        try {
-            UUID uuidId = UUID.fromString(roomId);
-            Optional<RoomEntity> entityOpt = roomRepository.findById(uuidId);
-            if (entityOpt.isPresent()) {
-                RoomEntity entity = entityOpt.get();
-                return new RoomConfig(
-                    entity.getId().toString(),
-                    entity.getVoiceModel(),
-                    entity.getVoiceGender(),
-                    entity.getVoicePrompt()
-                );
-            }
-        } catch (IllegalArgumentException e) {
-            System.err.println("Invalid Room ID format: " + roomId);
+        Optional<RoomEntity> entityOpt = roomRepository.findById(roomId);
+        if (entityOpt.isPresent()) {
+            RoomEntity entity = entityOpt.get();
+            return new RoomConfig(
+                entity.getId(),
+                entity.getVoiceModel(),
+                entity.getVoiceGender(),
+                entity.getVoicePrompt()
+            );
         }
         return null;
     }
